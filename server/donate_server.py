@@ -13,12 +13,12 @@ def on_connect(client, userdata, flags, rc):
     print ("CONNACK received with code %d" % (rc))
 
 def on_message(client, userdata, msg):
-    pass
-    # print(msg.topic+" "+str(msg.payload))
+    print(msg.topic+" "+str(msg.payload))
+    # pass
 
 def on_message_donation_incoming(client, userdata, msg):
     topic = msg.topic
-    tag = int(msg.payload)
+    tag =  int(msg.payload,16)
 
     # get reader id from topic
     topics = topic.split('/')
@@ -42,6 +42,7 @@ def on_message_donation_incoming(client, userdata, msg):
     # send data back to reader
     return_topic = "lisa/iot/donations/reader/"+str(reader_id)+"/user"
     return_payload = user['name']+" "+str(new_user_balance)
+    print return_topic + return_payload
     client.publish(return_topic, return_payload) 
 
 
@@ -51,7 +52,7 @@ client.on_message = on_message
 client.on_connect = on_connect
 
 client.connect("localhost", 1883, 60)
-client.subscribe("lisa/iot/donations/#")
+client.subscribe("lisa/iot/donations/reader/+/donate")
 client.message_callback_add("lisa/iot/donations/reader/+/donate", on_message_donation_incoming)
 
 # create data base
@@ -67,10 +68,9 @@ db_rooms.insert({'id' : 2, 'name': 'sauna',     'balance': 0,  'donate_amount' :
 
 #create members as example
 db_members.purge() #start with fresh database
-db_members.insert({'tag' : 123, 'name' : 'Peter' , 'balance' : 120})
-db_members.insert({'tag' : 456, 'name' : 'Paul'  , 'balance' : 19})
-db_members.insert({'tag' : 789, 'name' : 'Mary'  , 'balance' : 55})
-
+db_members.insert({'tag' : 0x8BC74125, 'name' : 'Peter' , 'balance' : 120})
+db_members.insert({'tag' : 0x8BC7DF75, 'name' : 'Paul'  , 'balance' : 19})
+db_members.insert({'tag' : 0x8BC73325, 'name' : 'Mary'  , 'balance' : 55})
 
 # do loop
 client.loop_forever()

@@ -20,6 +20,7 @@ long lastMsg = 0;
 char msg[50];
 int value = 0;
 
+
 void setup_wifi(){
   delay(10);
   Serial.println();
@@ -63,10 +64,6 @@ void reconnect() {
     // Attempt to connect
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish("outTopic", "hello world");
-      // ... and resubscribe
-      client.subscribe("inTopic");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -88,21 +85,26 @@ void setup() {
   mfrc522.PCD_Init();    // Init MFRC522
 }
 
-unsigned long  assemble_uid(byte *buffer, byte bufferSize) {
-    unsigned long uid=0;
-    // Take lower 4 bytes only, even if longer
+void assemble_uid(byte *buffer, unsigned int bufferSize, char outbuf[]) {
+    unsigned int uid = 0;
+
+    // take maximum of 4 Bytes
     if (bufferSize > 4)
       bufferSize = 4;
 
-    for (byte i = 0; i < bufferSize; i++) {
-        uid += buffer[i] << (i*8);
+    // assemble number from byte array
+    for (unsigned int i = 0; i < bufferSize; i++) {
+        uid |= (buffer[i] << i*8);
     }
-    return uid;
+
+    // convert unsigned int to ascii
+    utoa(uid, outbuf, 16);
   }
 
 
 void loop() {
-  unsigned long uid = 0;
+  // buffer to hold uid string
+  char uid[16];
 
   if(!client.connected()) {
     reconnect();
@@ -120,8 +122,6 @@ void loop() {
   }
 
   mfrc522.PICC_HaltA();
-  //uid = assemble_uid(mfrc522.uid.uidByte, mfrc522.uid.size);
-  client.publish(pub_topic, (uint8_t*)mfrc522.uid.uidByte, mfrc522.uid.size);
-  //client.publish(pub_topic, "haha");
-
+  assemble_uid(mfrc522.uid.uidByte, mfrc522.uid.size, uid);
+  client.publish(pub_topic, uid);
 }
